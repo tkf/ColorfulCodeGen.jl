@@ -9,14 +9,17 @@ else
     using InteractiveUtils: gen_call_with_extracted_types
 end
 
-const HIGHLIGHTERS = Dict(
-    :code_lowered  => `pygmentize -f terminal256 -l julia`,
-    :code_typed    => `pygmentize -f terminal256 -l julia`,
-    :code_warntype => `pygmentize -f terminal256 -l julia`,
-    :code_llvm     => `pygmentize -f terminal256 -l llvm`,
-    :code_llvm_raw => `pygmentize -f terminal256 -l llvm`,
-    :code_native   => `pygmentize -f terminal256 -l cpp-objdump`
-)
+const HIGHLIGHTERS = let
+    pygmentize = `pygmentize -f terminal256`
+    Dict(
+        :code_lowered  => `$pygmentize -l julia`,
+        :code_typed    => `$pygmentize -l julia`,
+        :code_warntype => `$pygmentize -l julia`,
+        :code_llvm     => `$pygmentize -l llvm`,
+        :code_llvm_raw => `$pygmentize -l llvm`,
+        :code_native   => `$pygmentize -l cpp-objdump`,
+    )
+end
 
 function call_with_highlighter(f, proc_out, highlighter)
     proc_in, process = open_reader(highlighter, proc_out)
