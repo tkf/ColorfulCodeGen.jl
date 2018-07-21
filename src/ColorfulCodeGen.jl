@@ -10,8 +10,7 @@ using Compat
     open_reader(cmd, proc_out) = open(cmd, "w", proc_out)
 else
     using InteractiveUtils: gen_call_with_extracted_types,
-        code_lowered, code_typed, code_warntype, code_llvm, code_llvm_raw,
-        code_native
+        code_lowered, code_typed, code_warntype, code_llvm, code_native
     using Markdown: MD
     open_reader(cmd, proc_out) = open(cmd, proc_out; write=true)
 end
@@ -24,7 +23,6 @@ const HIGHLIGHTERS = let
         :code_typed    => `$pygmentize -l julia`,
         :code_warntype => `$pygmentize -l julia`,
         :code_llvm     => `$pygmentize -l llvm`,
-        :code_llvm_raw => `$pygmentize -l llvm`,
         :code_native   => `$pygmentize -l cpp-objdump`,
     )
 end
@@ -50,7 +48,7 @@ function showpiped(io::IO, thing, cmd::Cmd)
     nothing
 end
 
-const _with_io = (:code_warntype, :code_llvm, :code_llvm_raw, :code_native)
+const _with_io = (:code_warntype, :code_llvm, :code_native)
 const _no_io = (:code_typed, :code_lowered)
 
 for fname in _with_io
