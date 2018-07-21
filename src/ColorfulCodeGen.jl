@@ -6,14 +6,17 @@ using Compat
 
 @static if VERSION < v"0.7-"
     using Base: gen_call_with_extracted_types
+    using Base.Markdown: MD
     open_reader(cmd, proc_out) = open(cmd, "w", proc_out)
 else
     using InteractiveUtils: gen_call_with_extracted_types
+    using Markdown: MD
     open_reader(cmd, proc_out) = open(cmd, proc_out; write=true)
 end
 
+const _PYGMENTIZE = `pygmentize -f terminal256`
 const HIGHLIGHTERS = let
-    pygmentize = `pygmentize -f terminal256`
+    pygmentize = _PYGMENTIZE
     Dict(
         :code_lowered  => `$pygmentize -l julia`,
         :code_typed    => `$pygmentize -l julia`,
@@ -30,6 +33,19 @@ function call_with_highlighter(f, proc_out, highlighter)
     close(proc_in)
     wait(process)
     return nothing
+end
+
+highlight(x) = highlight(stdout, x)
+highlight(io::IO, x::Expr) = showpiped(io, x, `$_PYGMENTIZE -l julia`)
+highlight(io::IO, x::MD) = showpiped(io, x, `$_PYGMENTIZE -l md`)
+
+showpiped(thing, cmd::Cmd) = showpiped(stdout, thing, cmd)
+
+function showpiped(io::IO, thing, cmd::Cmd)
+    call_with_highlighter(io, cmd) do proc_in
+        print(proc_in, sprint(show, MIME("text/plain"), thing))
+    end
+    nothing
 end
 
 const _with_io = (:code_warntype, :code_llvm, :code_llvm_raw, :code_native)
@@ -61,12 +77,10 @@ for fname in _no_io
         """)
         function $(colored_name)(io::IO, args...)
             highlighter = HIGHLIGHTERS[$(QuoteNode(fname))]
-            call_with_highlighter(io, highlighter) do proc_in
-                results = $fname(args...)
-                result = length(results) == 1 ? results[1] : results
-                # ^- from interactiveutil.jl
-                print(proc_in, sprint(show, MIME("text/plain"), result))
-            end
+            results = $fname(args...)
+            result = length(results) == 1 ? results[1] : results
+            # ^- from interactiveutil.jl
+            showpiped(io, result, highlighter)
         end
         $(colored_name)(args...) = $(colored_name)(stdout, args...)
     end
