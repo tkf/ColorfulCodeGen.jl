@@ -9,6 +9,7 @@ using Compat
     open_reader(cmd, proc_out) = open(cmd, "w", proc_out)
 else
     using InteractiveUtils: gen_call_with_extracted_types
+    open_reader(cmd, proc_out) = open(cmd, proc_out; write=true)
 end
 
 const HIGHLIGHTERS = let
@@ -41,7 +42,7 @@ for fname in _with_io
             $(colored_name)([io,] args...)
 
         Colored version of `$(fname)([io,] args...)`.
-        """) ->
+        """)
         function $(colored_name)(io::IO, args...)
             call_with_highlighter(proc_in -> $fname(proc_in, args...),
                                   io, HIGHLIGHTERS[$(QuoteNode(fname))])
@@ -57,7 +58,7 @@ for fname in _no_io
             $(colored_name)([io,] args...)
 
         Colored version of `$(fname)(args...)`.
-        """) ->
+        """)
         function $(colored_name)(io::IO, args...)
             highlighter = HIGHLIGHTERS[$(QuoteNode(fname))]
             call_with_highlighter(io, highlighter) do proc_in
