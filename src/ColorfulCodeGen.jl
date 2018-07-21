@@ -27,7 +27,7 @@ const HIGHLIGHTERS = let
     )
 end
 
-function call_with_highlighter(f, proc_out, highlighter)
+function with_highlighter(f, proc_out, highlighter)
     proc_in, process = open_reader(highlighter, proc_out)
     f(proc_in)
     close(proc_in)
@@ -42,7 +42,7 @@ highlight(io::IO, x::MD) = showpiped(io, x, `$_PYGMENTIZE -l md`)
 showpiped(thing, cmd::Cmd) = showpiped(stdout, thing, cmd)
 
 function showpiped(io::IO, thing, cmd::Cmd)
-    call_with_highlighter(io, cmd) do proc_in
+    with_highlighter(io, cmd) do proc_in
         print(proc_in, sprint(show, MIME("text/plain"), thing))
     end
     nothing
@@ -60,8 +60,8 @@ for fname in _with_io
         Colored version of `$(fname)([io,] args...)`.
         """)
         function $(colored_name)(io::IO, args...)
-            call_with_highlighter(proc_in -> $fname(proc_in, args...),
-                                  io, HIGHLIGHTERS[$(QuoteNode(fname))])
+            with_highlighter(proc_in -> $fname(proc_in, args...),
+                             io, HIGHLIGHTERS[$(QuoteNode(fname))])
         end
         $(colored_name)(args...) = $(colored_name)(stdout, args...)
     end
