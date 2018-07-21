@@ -10,6 +10,8 @@ else
 end
 
 const HIGHLIGHTERS = Dict(
+    :code_lowered  => `pygmentize -f terminal256 -l julia`,
+    :code_typed    => `pygmentize -f terminal256 -l julia`,
     :code_warntype => `pygmentize -f terminal256 -l julia`,
     :code_llvm     => `pygmentize -f terminal256 -l llvm`,
     :code_llvm_raw => `pygmentize -f terminal256 -l llvm`,
@@ -24,7 +26,10 @@ function call_with_highlighter(f, proc_out, highlighter)
     return nothing
 end
 
-for fname in [:code_warntype, :code_llvm, :code_llvm_raw, :code_native]
+const _with_io = (:code_warntype, :code_llvm, :code_llvm_raw, :code_native)
+const _no_io = (:code_typed, :code_lowered)
+
+for fname in _with_io
     colored_name = Symbol("c$fname")
     @eval begin
         @doc $("""
@@ -37,7 +42,33 @@ for fname in [:code_warntype, :code_llvm, :code_llvm_raw, :code_native]
                                   io, HIGHLIGHTERS[$(QuoteNode(fname))])
         end
         $(colored_name)(args...) = $(colored_name)(stdout, args...)
+    end
+end
 
+for fname in _no_io
+    colored_name = Symbol("c$fname")
+    @eval begin
+        @doc $("""
+            $(colored_name)([io,] args...)
+
+        Colored version of `$(fname)(args...)`.
+        """) ->
+        function $(colored_name)(io::IO, args...)
+            highlighter = HIGHLIGHTERS[$(QuoteNode(fname))]
+            call_with_highlighter(io, highlighter) do proc_in
+                results = $fname(args...)
+                result = length(results) == 1 ? results[1] : results
+                # ^- from interactiveutil.jl
+                print(proc_in, sprint(show, MIME("text/plain"), result))
+            end
+        end
+        $(colored_name)(args...) = $(colored_name)(stdout, args...)
+    end
+end
+
+for fname in (_with_io..., _no_io...)
+    colored_name = Symbol("c$fname")
+    @eval begin
         macro ($colored_name)(ex0)
             gen_call_with_extracted_types($(Expr(:quote, colored_name)), ex0)
         end
