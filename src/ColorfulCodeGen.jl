@@ -9,7 +9,9 @@ using Compat
     using Base.Markdown: MD
     open_reader(cmd, proc_out) = open(cmd, "w", proc_out)
 else
-    using InteractiveUtils: gen_call_with_extracted_types
+    using InteractiveUtils: gen_call_with_extracted_types,
+        code_lowered, code_typed, code_warntype, code_llvm, code_llvm_raw,
+        code_native
     using Markdown: MD
     open_reader(cmd, proc_out) = open(cmd, proc_out; write=true)
 end
@@ -90,7 +92,12 @@ for fname in (_with_io..., _no_io...)
     colored_name = Symbol("c$fname")
     @eval begin
         macro ($colored_name)(ex0)
-            gen_call_with_extracted_types($(Expr(:quote, colored_name)), ex0)
+            quoted = $(Expr(:quote, colored_name))
+            if VERSION < v"0.7-"
+                gen_call_with_extracted_types(quoted, ex0)
+            else
+                gen_call_with_extracted_types(__module__, quoted, ex0)
+            end
         end
 
         export $colored_name
