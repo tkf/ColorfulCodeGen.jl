@@ -37,6 +37,13 @@ for fname in [:code_warntype, :code_llvm, :code_llvm_raw, :code_native]
                                   io, HIGHLIGHTERS[$(QuoteNode(fname))])
         end
         $(colored_name)(args...) = $(colored_name)(stdout, args...)
+
+        macro ($colored_name)(ex0)
+            gen_call_with_extracted_types($(Expr(:quote, colored_name)), ex0)
+        end
+
+        export $colored_name
+        export $(Symbol("@$colored_name"))
     end
 end
 
