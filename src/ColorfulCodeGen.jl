@@ -103,4 +103,29 @@ for fname in (_with_io..., _no_io...)
     end
 end
 
+dehygiene(expr::Expr) = Expr(expr.head, dehygiene.(expr.args)...)
+dehygiene(x::Any) = x  # LineNumberNode etc.
+
+function dehygiene(sym::Symbol)
+    str = string(sym)
+    if startswith(str, "#")
+        return Symbol(replace(str, "#" => "😷"))
+    else
+        return sym
+    end
+end
+
+"""
+    @cmacroexpand ex
+
+Print syntax highlighted expression of what `@macroexpand ex` returns.
+"""
+macro cmacroexpand(ex)
+    quote
+        highlight(dehygiene(@macroexpand $ex))
+    end
+end
+
+export @cmacroexpand
+
 end # module
