@@ -12,7 +12,10 @@ else
     using InteractiveUtils: gen_call_with_extracted_types,
         code_lowered, code_typed, code_warntype, code_llvm, code_native
     using Markdown: MD
-    open_reader(cmd, proc_out) = open(cmd, proc_out; write=true)
+    function open_reader(cmd, proc_out)
+        process = open(cmd, proc_out; write=true)
+        return (process.in, process)
+    end
 end
 
 const _PYGMENTIZE = `pygmentize -f terminal256`
