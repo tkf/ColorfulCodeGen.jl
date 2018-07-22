@@ -22,6 +22,8 @@ end
     @test_nothrow @ccode_typed    1.0im + 1.0im
     @test_nothrow @ccode_lowered  1.0im + 1.0im
     @test_nothrow @cmacroexpand @warn "hello"
-    @test_nothrow @cmacroexpand1 @warn "hello"
+    @static if VERSION >= v"0.7.0-"
+        @test_nothrow @cmacroexpand1 @warn "hello"
+    end
     @test_nothrow ColorfulCodeGen.highlight(@macroexpand @warn "hello")
 end
