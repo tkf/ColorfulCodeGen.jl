@@ -1,6 +1,11 @@
 using ColorfulCodeGen
-using Compat: @warn
+using ColorfulCodeGen: highlight
+using Compat: @warn, devnull
 using Compat.Test
+
+@static if VERSION >= v"0.7-"
+    import Markdown
+end
 
 macro test_nothrow(ex)
     quote
@@ -21,5 +26,6 @@ end
     @static if VERSION >= v"0.7.0-"
         @test_nothrow @cmacroexpand1 @warn "hello"
     end
-    @test_nothrow ColorfulCodeGen.highlight(@macroexpand @warn "hello")
+    @test_nothrow highlight(devnull, :(1.0im + 1.0im))
+    @test_nothrow highlight(devnull, Markdown.parse(IOBuffer("# Title")))
 end
