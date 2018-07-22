@@ -21,6 +21,7 @@ end
     @test_nothrow @ccode_native   1.0im + 1.0im
     @test_nothrow @ccode_typed    1.0im + 1.0im
     @test_nothrow @ccode_lowered  1.0im + 1.0im
-    @test_nothrow @macroexpand @warn "hello"
+    @test_nothrow @cmacroexpand @warn "hello"
+    @test_nothrow @cmacroexpand1 @warn "hello"
     @test_nothrow ColorfulCodeGen.highlight(@macroexpand @warn "hello")
 end

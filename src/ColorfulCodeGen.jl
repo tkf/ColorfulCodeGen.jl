@@ -132,4 +132,13 @@ end
 
 export @cmacroexpand
 
+@static if VERSION >= v"0.7-"
+    macro cmacroexpand1(ex)
+        :(highlight(dehygiene(macroexpand($__module__, $(QuoteNode(ex));
+                                          recursive = false))))
+    end
+
+    export @cmacroexpand1
+end
+
 end # module
