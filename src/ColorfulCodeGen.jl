@@ -18,17 +18,28 @@ else
     end
 end
 
-const _PYGMENTIZE = `pygmentize -f terminal256`
-const HIGHLIGHTERS = let
-    pygmentize = _PYGMENTIZE
+mutable struct PygmentizeConfig
+    command::Cmd
+    options::Dict{Any, Cmd}
+end
+
+const PYGMENTIZE = PygmentizeConfig(
+    `pygmentize -f terminal256`,
     Dict(
-        :code_lowered  => `$pygmentize -l julia`,
-        :code_typed    => `$pygmentize -l julia`,
-        :code_warntype => `$pygmentize -l julia`,
-        :code_llvm     => `$pygmentize -l llvm`,
-        :code_native   => `$pygmentize -l asm`,
+        code_lowered  => `-l julia`,
+        code_typed    => `-l julia`,
+        code_warntype => `-l julia`,
+        code_llvm     => `-l llvm`,
+        code_native   => `-l asm`,
         # TODO: "-l nasm" when syntax=:intel
-    )
+        Expr          => `-l julia`,
+        MD            => `-l md`,
+    ),
+)
+
+function get_command(key, config::PygmentizeConfig = PYGMENTIZE)
+    option = config.options[key]
+    return `$(config.command) $option`
 end
 
 function with_highlighter(f, proc_out, highlighter)
@@ -40,8 +51,8 @@ function with_highlighter(f, proc_out, highlighter)
 end
 
 highlight(x) = highlight(stdout, x)
-highlight(io::IO, x::Expr) = showpiped(io, x, `$_PYGMENTIZE -l julia`)
-highlight(io::IO, x::MD) = showpiped(io, x, `$_PYGMENTIZE -l md`)
+highlight(io::IO, x::Expr) = showpiped(io, x, get_command(Expr))
+highlight(io::IO, x::MD) = showpiped(io, x, get_command(MD))
 
 showpiped(thing, cmd::Cmd) = showpiped(stdout, thing, cmd)
 
@@ -64,7 +75,7 @@ for fname in _with_io
         Colored version of `$(fname)([io,] args...; kwargs...)`.
         """)
         function $(colored_name)(io::IO, args...;
-                                 cmd = HIGHLIGHTERS[$(QuoteNode(fname))],
+                                 cmd = get_command($fname),
                                  kwargs...)
             with_highlighter(io, cmd) do proc_in
                 $fname(proc_in, args...; kwargs...)
@@ -84,7 +95,7 @@ for fname in _no_io
         Colored version of `$(fname)(args...; kwargs...)`.
         """)
         function $(colored_name)(io::IO, args...;
-                                 cmd = HIGHLIGHTERS[$(QuoteNode(fname))],
+                                 cmd = get_command($fname),
                                  kwargs...)
             results = $fname(args...; kwargs...)
             result = length(results) == 1 ? results[1] : results
