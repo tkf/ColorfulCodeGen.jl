@@ -58,15 +58,17 @@ for fname in _with_io
     colored_name = Symbol("c$fname")
     @eval begin
         @doc $("""
-            $(colored_name)([io,] args...)
+            $(colored_name)([io,] args...; kwargs...)
 
-        Colored version of `$(fname)([io,] args...)`.
+        Colored version of `$(fname)([io,] args...; kwargs...)`.
         """)
-        function $(colored_name)(io::IO, args...)
-            with_highlighter(proc_in -> $fname(proc_in, args...),
-                             io, HIGHLIGHTERS[$(QuoteNode(fname))])
+        function $(colored_name)(io::IO, args...; kwargs...)
+            with_highlighter(io, HIGHLIGHTERS[$(QuoteNode(fname))]) do proc_in
+                $fname(proc_in, args...; kwargs...)
+            end
         end
-        $(colored_name)(args...) = $(colored_name)(stdout, args...)
+        $(colored_name)(args...; kwargs...) =
+            $(colored_name)(stdout, args...; kwargs...)
     end
 end
 
@@ -74,18 +76,19 @@ for fname in _no_io
     colored_name = Symbol("c$fname")
     @eval begin
         @doc $("""
-            $(colored_name)([io,] args...)
+            $(colored_name)([io,] args...; kwargs...)
 
-        Colored version of `$(fname)(args...)`.
+        Colored version of `$(fname)(args...; kwargs...)`.
         """)
-        function $(colored_name)(io::IO, args...)
+        function $(colored_name)(io::IO, args...; kwargs...)
             highlighter = HIGHLIGHTERS[$(QuoteNode(fname))]
-            results = $fname(args...)
+            results = $fname(args...; kwargs...)
             result = length(results) == 1 ? results[1] : results
             # ^- from interactiveutil.jl
             showpiped(io, result, highlighter)
         end
-        $(colored_name)(args...) = $(colored_name)(stdout, args...)
+        $(colored_name)(args...; kwargs...) =
+            $(colored_name)(stdout, args...; kwargs...)
     end
 end
 
