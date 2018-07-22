@@ -121,9 +121,10 @@ end
 Print syntax highlighted expression of what `@macroexpand ex` returns.
 """
 macro cmacroexpand(ex)
-    quote
-        highlight(dehygiene(@macroexpand $ex))
+    if VERSION < v"0.7-"
+        __module__ = current_module()
     end
+    return :(highlight(dehygiene(macroexpand($__module__, $(QuoteNode(ex))))))
 end
 
 export @cmacroexpand
