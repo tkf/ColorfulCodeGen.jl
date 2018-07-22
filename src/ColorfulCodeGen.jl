@@ -26,7 +26,8 @@ const HIGHLIGHTERS = let
         :code_typed    => `$pygmentize -l julia`,
         :code_warntype => `$pygmentize -l julia`,
         :code_llvm     => `$pygmentize -l llvm`,
-        :code_native   => `$pygmentize -l cpp-objdump`,
+        :code_native   => `$pygmentize -l asm`,
+        # TODO: "-l nasm" when syntax=:intel
     )
 end
 
