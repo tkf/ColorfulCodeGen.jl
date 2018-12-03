@@ -23,6 +23,8 @@ mutable struct PygmentizeConfig
     options::Dict{Any, Cmd}
 end
 
+code_intel(args...) = code_native(args...; syntax=:intel)
+
 const PYGMENTIZE = PygmentizeConfig(
     `pygmentize -f terminal256`,
     Dict(
@@ -31,7 +33,7 @@ const PYGMENTIZE = PygmentizeConfig(
         code_warntype => `-l julia`,
         code_llvm     => `-l llvm`,
         code_native   => `-l asm`,
-        # TODO: "-l nasm" when syntax=:intel
+        code_intel    => `-l nasm`,
         Expr          => `-l julia`,
         MD            => `-l md`,
     ),
@@ -63,7 +65,7 @@ function showpiped(io::IO, thing, cmd::Cmd)
     nothing
 end
 
-const _with_io = (:code_warntype, :code_llvm, :code_native)
+const _with_io = (:code_warntype, :code_llvm, :code_native, :code_intel)
 const _no_io = (:code_typed, :code_lowered)
 
 for fname in _with_io
