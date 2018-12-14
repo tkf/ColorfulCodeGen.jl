@@ -18,6 +18,8 @@ else
     end
 end
 
+using Base.Meta: show_sexpr
+
 mutable struct PygmentizeConfig
     command::Cmd
     options::Dict{Any, Cmd}
@@ -34,6 +36,7 @@ const PYGMENTIZE = PygmentizeConfig(
         code_llvm     => `-l llvm`,
         code_native   => `-l asm`,
         code_intel    => `-l nasm`,
+        show_sexpr    => `-l scheme`,
         Expr          => `-l julia`,
         MD            => `-l md`,
     ),
@@ -53,7 +56,8 @@ function with_highlighter(f, proc_out, highlighter)
 end
 
 highlight(x) = highlight(stdout, x)
-highlight(io::IO, x::Expr) = showpiped(io, x, get_command(Expr))
+highlight(io::IO, x::Union{Expr, Core.CodeInfo}) =
+    showpiped(io, x, get_command(Expr))
 highlight(io::IO, x::MD) = showpiped(io, x, get_command(MD))
 
 showpiped(thing, cmd::Cmd) = showpiped(stdout, thing, cmd)
@@ -68,7 +72,7 @@ end
 const _with_io = (:code_warntype, :code_llvm, :code_native, :code_intel)
 const _no_io = (:code_typed, :code_lowered)
 
-for fname in _with_io
+for fname in (_with_io..., :show_sexpr)
     colored_name = Symbol("c$fname")
     @eval begin
         @doc $("""
@@ -159,6 +163,38 @@ export @cmacroexpand
     end
 
     export @cmacroexpand1
+end
+
+export @cshow_sexpr
+
+"""
+    @cshow_sexpr expression
+
+Print S-expression of Julia `expression`; it's a colored version of
+`Meta.show_sexpr(:(expression))`.
+"""
+macro cshow_sexpr(ex)
+    :($cshow_sexpr($(QuoteNode(ex))))
+end
+
+export @clowered
+
+"""
+    @clowered expression
+
+Print lowered form of `expression`; it's a colored version of
+`Meta.lower(Main, :(expression))`.
+"""
+macro clowered(ex)
+    quote
+        let ex = Meta.lower($__module__, $(QuoteNode(ex)))
+            if ex isa $Expr && length(ex.args) == 1 &&
+                    ex.args[1] isa $(Core.CodeInfo)
+                ex = ex.args[1]
+            end
+            $highlight(ex)
+        end
+    end
 end
 
 end # module
