@@ -1,21 +1,11 @@
-__precompile__(true)
-
 module ColorfulCodeGen
 
-using Compat
-
-@static if VERSION < v"0.7-"
-    using Base: gen_call_with_extracted_types
-    using Base.Markdown: MD
-    open_reader(cmd, proc_out) = open(cmd, "w", proc_out)
-else
-    using InteractiveUtils: gen_call_with_extracted_types_and_kwargs,
-        code_lowered, code_typed, code_warntype, code_llvm, code_native
-    using Markdown: MD
-    function open_reader(cmd, proc_out)
-        process = open(cmd, proc_out; write=true)
-        return (process.in, process)
-    end
+using InteractiveUtils: gen_call_with_extracted_types_and_kwargs,
+    code_lowered, code_typed, code_warntype, code_llvm, code_native
+using Markdown: MD
+function open_reader(cmd, proc_out)
+    process = open(cmd, proc_out; write=true)
+    return (process.in, process)
 end
 
 using Base.Meta: show_sexpr
@@ -118,11 +108,7 @@ for fname in (_with_io..., _no_io...)
     @eval begin
         macro ($colored_name)(ex0...)
             quoted = $(Expr(:quote, colored_name))
-            if VERSION < v"0.7-"
-                gen_call_with_extracted_types(quoted, ex0[1])
-            else
-                gen_call_with_extracted_types_and_kwargs(__module__, quoted, ex0)
-            end
+            gen_call_with_extracted_types_and_kwargs(__module__, quoted, ex0)
         end
 
         export $colored_name
@@ -148,22 +134,17 @@ end
 Print syntax highlighted expression of what `@macroexpand ex` returns.
 """
 macro cmacroexpand(ex)
-    if VERSION < v"0.7-"
-        __module__ = current_module()
-    end
     return :(highlight(dehygiene(macroexpand($__module__, $(QuoteNode(ex))))))
 end
 
 export @cmacroexpand
 
-@static if VERSION >= v"0.7-"
-    macro cmacroexpand1(ex)
-        :(highlight(dehygiene(macroexpand($__module__, $(QuoteNode(ex));
-                                          recursive = false))))
-    end
-
-    export @cmacroexpand1
+macro cmacroexpand1(ex)
+    :(highlight(dehygiene(macroexpand($__module__, $(QuoteNode(ex));
+                                      recursive = false))))
 end
+
+export @cmacroexpand1
 
 export @cshow_sexpr
 

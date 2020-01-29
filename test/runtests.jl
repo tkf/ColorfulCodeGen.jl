@@ -1,11 +1,7 @@
+import Markdown
 using ColorfulCodeGen
 using ColorfulCodeGen: highlight
-using Compat: @warn, devnull
-using Compat.Test
-
-@static if VERSION >= v"0.7-"
-    import Markdown
-end
+using Test
 
 macro test_nothrow(ex)
     quote
@@ -23,9 +19,7 @@ end
     @test_nothrow @ccode_typed    1.0im + 1.0im
     @test_nothrow @ccode_lowered  1.0im + 1.0im
     @test_nothrow @cmacroexpand @warn "hello"
-    @static if VERSION >= v"0.7.0-"
-        @test_nothrow @cmacroexpand1 @warn "hello"
-    end
+    @test_nothrow @cmacroexpand1 @warn "hello"
     @test_nothrow highlight(devnull, :(1.0im + 1.0im))
     # Old pygmentize (available in Travis) does not have md lexer?:
     @test_skip highlight(devnull, Markdown.parse(IOBuffer("# Title")))
