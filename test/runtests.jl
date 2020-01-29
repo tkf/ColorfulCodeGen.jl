@@ -6,7 +6,7 @@ using Test
 macro test_nothrow(ex)
     quote
         @test begin
-            $(esc(ex))
+            show(devnull, "text/plain", $(esc(ex)))
             true
         end
     end
@@ -20,7 +20,7 @@ end
     @test_nothrow @ccode_lowered  1.0im + 1.0im
     @test_nothrow @cmacroexpand @warn "hello"
     @test_nothrow @cmacroexpand1 @warn "hello"
-    @test_nothrow highlight(devnull, :(1.0im + 1.0im))
+    @test_nothrow highlight(:(1.0im + 1.0im))
     # Old pygmentize (available in Travis) does not have md lexer?:
-    @test_skip highlight(devnull, Markdown.parse(IOBuffer("# Title")))
+    @test_skip highlight(Markdown.parse(IOBuffer("# Title")))
 end

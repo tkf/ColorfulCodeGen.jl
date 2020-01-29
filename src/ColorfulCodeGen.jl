@@ -32,31 +32,47 @@ const PYGMENTIZE = PygmentizeConfig(
     ),
 )
 
+struct ColoredCode
+    text::String
+    optionkey
+end
+
+function Base.show(io::IO, ::MIME"text/plain", cc::ColoredCode)
+    if get(io, :compact, false) || get(io, :typeinfo, Any) === ColoredCode
+        print(io, "ColoredCode(")
+        text = repr(cc.text)
+        if get(io, :limit, true) && length(text) > 20
+            print(io, first(text, 20))
+            printstyled(io, '…'; color=:light_black)
+            print(io, '"')
+        else
+            print(io, text)
+        end
+        print(io, ", ", cc.optionkey, ")")
+        return
+    end
+    highlighter = get_command(cc.optionkey)
+    proc_in, process = open_reader(highlighter, io)
+    try
+        print(proc_in, cc.text)
+    finally
+        close(proc_in)
+        wait(process)
+    end
+    return
+end
+
 function get_command(key, config::PygmentizeConfig = PYGMENTIZE)
     option = config.options[key]
     return `$(config.command) $option`
 end
 
-function with_highlighter(f, proc_out, highlighter)
-    proc_in, process = open_reader(highlighter, proc_out)
-    f(proc_in)
-    close(proc_in)
-    wait(process)
-    return nothing
-end
+mimefor(_) = MIME"text/plain"()
+mimefor(::MD) = MIME"text/markdown"()
 
-highlight(x) = highlight(stdout, x)
-highlight(io::IO, x::Union{Expr, Core.CodeInfo}) =
-    showpiped(io, x, get_command(Expr))
-highlight(io::IO, x::MD) = showpiped(io, x, get_command(MD))
-
-showpiped(thing, cmd::Cmd) = showpiped(stdout, thing, cmd)
-
-function showpiped(io::IO, thing, cmd::Cmd)
-    with_highlighter(io, cmd) do proc_in
-        print(proc_in, sprint(show, MIME("text/plain"), thing))
-    end
-    nothing
+function highlight(x)
+    text = sprint(show, mimefor(x), x)
+    return ColoredCode(text, typeof(x))
 end
 
 const _with_io = (:code_warntype, :code_llvm, :code_native, :code_intel)
@@ -66,19 +82,16 @@ for fname in (_with_io..., :show_sexpr)
     colored_name = Symbol("c$fname")
     @eval begin
         @doc $("""
-            $(colored_name)([io,] args...; cmd::Cmd, kwargs...)
+            $(colored_name)([io,] args...; kwargs...)
 
         Colored version of `$(fname)([io,] args...; kwargs...)`.
         """)
-        function $(colored_name)(io::IO, args...;
-                                 cmd = get_command($fname),
-                                 kwargs...)
-            with_highlighter(io, cmd) do proc_in
-                $fname(proc_in, args...; kwargs...)
+        function $(colored_name)(args...; kwargs...)
+            text = sprint() do io
+                $fname(io, args...; kwargs...)
             end
+            return ColoredCode(text, $fname)
         end
-        $(colored_name)(args...; kwargs...) =
-            $(colored_name)(stdout, args...; kwargs...)
     end
 end
 
@@ -86,26 +99,25 @@ for fname in _no_io
     colored_name = Symbol("c$fname")
     @eval begin
         @doc $("""
-            $(colored_name)([io,] args...; cmd::Cmd, kwargs...)
+            $(colored_name)([io,] args...; kwargs...)
 
         Colored version of `$(fname)(args...; kwargs...)`.
         """)
-        function $(colored_name)(io::IO, args...;
-                                 cmd = get_command($fname),
-                                 kwargs...)
+        function $(colored_name)(args...; kwargs...)
             results = $fname(args...; kwargs...)
             result = length(results) == 1 ? results[1] : results
             # ^- from interactiveutil.jl
-            showpiped(io, result, cmd)
+            text = sprint(show, MIME("text/plain"), result)
+            return ColoredCode(text, $fname)
         end
-        $(colored_name)(args...; kwargs...) =
-            $(colored_name)(stdout, args...; kwargs...)
     end
 end
 
 for fname in (_with_io..., _no_io...)
     colored_name = Symbol("c$fname")
     @eval begin
+        $(colored_name)(io::IO, args...; kwargs...) =
+            show(io, MIME"text/plain"(), $(colored_name)(args...; kwargs...))
         macro ($colored_name)(ex0...)
             quoted = $(Expr(:quote, colored_name))
             gen_call_with_extracted_types_and_kwargs(__module__, quoted, ex0)
