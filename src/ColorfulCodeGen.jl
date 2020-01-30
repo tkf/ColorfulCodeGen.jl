@@ -63,7 +63,8 @@ function Base.show(io::IO, ::MIME"text/plain", cc::ColoredCode)
 end
 
 function get_command(key, config::PygmentizeConfig = PYGMENTIZE)
-    option = config.options[key]
+    option = get(config.options, key, nothing)
+    option === nothing && error("Highlighter not found for: ", key)
     return `$(config.command) $option`
 end
 
