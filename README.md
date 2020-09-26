@@ -1,7 +1,5 @@
 # ColorfulCodeGen
 
-[![Build Status](https://travis-ci.org/tkf/ColorfulCodeGen.jl.svg?branch=master)](https://travis-ci.org/tkf/ColorfulCodeGen.jl)
-
-[![Coverage Status](https://coveralls.io/repos/tkf/ColorfulCodeGen.jl/badge.svg?branch=master&service=github)](https://coveralls.io/github/tkf/ColorfulCodeGen.jl?branch=master)
+[![GitHub Actions](https://github.com/tkf/ColorfulCodeGen.jl/workflows/Run%20tests/badge.svg)](https://github.com/tkf/ColorfulCodeGen.jl/actions?query=workflow%3ARun+tests)
 
 [![codecov.io](http://codecov.io/github/tkf/ColorfulCodeGen.jl/coverage.svg?branch=master)](http://codecov.io/github/tkf/ColorfulCodeGen.jl?branch=master)
